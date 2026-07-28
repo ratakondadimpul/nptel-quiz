@@ -22,6 +22,7 @@ const PracticeMode = () => {
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [userAnswers, setUserAnswers] = useState<number[]>([]);
   
   // Confetti size
   const [windowSize, setWindowSize] = useState({ width: window.innerWidth, height: window.innerHeight });
@@ -50,6 +51,11 @@ const PracticeMode = () => {
     
     setSelectedOption(idx);
     setIsAnswered(true);
+    setUserAnswers(prev => {
+      const newArr = [...prev];
+      newArr[currentIdx] = idx;
+      return newArr;
+    });
     
     const isCorrect = idx === questions[currentIdx].correctAnswerIndex;
     if (isCorrect) {
@@ -71,7 +77,7 @@ const PracticeMode = () => {
       if (weekId) {
         updateProgress(weekId, {
           weekId,
-          score: score + (selectedOption === questions[currentIdx].correctAnswerIndex ? 1 : 0),
+          score: score,
           totalQuestions: questions.length,
           completedAt: new Date().toISOString()
         });
@@ -85,6 +91,7 @@ const PracticeMode = () => {
     setIsAnswered(false);
     setScore(0);
     setShowResults(false);
+    setUserAnswers([]);
   };
 
   if (loading) {
@@ -142,8 +149,35 @@ const PracticeMode = () => {
           </div>
           
           <p className="text-xl text-slate-600 dark:text-slate-300 mb-8">
-            {isPerfect ? "Flawless! You've mastered this week." : "Great effort! Review the study key to patch up any mistakes."}
+            {isPerfect ? "Flawless! You've mastered this week." : "Great effort! Review your mistakes below."}
           </p>
+
+          {!isPerfect && (
+            <div className="text-left mb-8 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              <h3 className="font-bold text-lg text-slate-800 dark:text-white sticky top-0 bg-white dark:bg-slate-800 py-2">Review Your Answers</h3>
+              {questions.map((q, idx) => {
+                const userAnswer = userAnswers[idx];
+                const isCorrect = userAnswer === q.correctAnswerIndex;
+                if (isCorrect) return null;
+                
+                return (
+                  <div key={idx} className="p-4 rounded-xl border border-red-200 bg-red-50/50 dark:border-red-900/50 dark:bg-red-900/10">
+                    <p className="font-semibold text-slate-800 dark:text-slate-200 mb-2">
+                      Q{idx + 1}. {q.questionText}
+                    </p>
+                    <div className="text-sm space-y-1">
+                      <p className="text-red-600 dark:text-red-400">
+                        <span className="font-semibold">Your Answer:</span> {userAnswer !== undefined && userAnswer !== null ? q.options[userAnswer] : 'Skipped/None'}
+                      </p>
+                      <p className="text-green-600 dark:text-green-400">
+                        <span className="font-semibold">Correct Answer:</span> {q.options[q.correctAnswerIndex]}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button onClick={handleRetry} className="px-6 py-3 rounded-xl font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition flex items-center justify-center">
